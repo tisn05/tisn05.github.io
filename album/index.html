@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang=zh>
+
+<head>
+    <meta charset=utf-8>
+    <title>相册</title>
+</head>
+
+<body>
+    <strong>相册下载</strong>
+    <br />
+
+    相册ID或URL：<input type="text" value="" id="相册ID" />
+    <button onclick="获取相册信息();">获取相册信息</button>
+    <br />
+    <div id="相册信息"></div>
+    <p id="msg"></p>
+    <div id="list"></div>
+    <script src='chunk-vendors.f7b7f26c.js'></script>
+    <script src='app.45a97e69.js'></script>
+    <script src='album.9d919666.js'></script>
+    <script src='album~albumset.d0267132.js'></script>
+    <script src='album~albumset~midAutumn.6d00841a.js'></script>
+    <script src='album~findMeResult.be4c9324.js'></script>
+    <script src='jquery.js'></script>
+    <script>
+        const albumId = 1015762004;
+        const e = 1060253039;
+        var n = 2;
+
+        var allList = [];
+
+        function 开始分析(albumID, subID, v) {
+            allList = [];
+            getAll(albumID, subID, v);
+        }
+        function isNumber(val) {
+            var regPos = /^\d+(\.\d+)?$/; //非负浮点数
+            var regNeg = /^(-(([0-9]+\.[0-9]*[1-9][0-9]*)|([0-9]*[1-9][0-9]*\.[0-9]+)|([0-9]*[1-9][0-9]*)))$/; //负浮点数
+            if (regPos.test(val) || regNeg.test(val)) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        function 获取相册信息() {
+            var id = $('#相册ID').val();
+            if (!isNumber(id)) {
+                // https://v.alltuu.com/album/1015762004/?from=singlemessage
+                var reg = new RegExp('album\/(.*?)\/', 'g');
+                var m = reg.exec(id);
+                if (m != null && m.length >= 2) {
+                    id = m[1];
+                } else {
+                    $('#相册信息').html(`<strong>ID或地址错误</strong>`);
+                    return;
+                }
+            }
+            window.$API.v4cUs(id);
+            var url = window.UURRLL;
+            $.ajax({
+                method: 'get',
+                url: url,
+                success: (data) => {
+                    if (data.m == "OK") {
+                        window.$API.v4cFa(id);
+                        var url2 = window.UURRLL;
+                        $.ajax({
+                            method: 'get',
+                            url: url2,
+                            success: (data2) => {
+                                var o = "";
+                                if (data.m == "OK") {
+                                    o += `<p>相册名称：<strong>${data.d.albumShareDTO.title}</strong></p>`;
+                                    o += `<p>分享时间：<strong>${data.d.albumShareDTO.shareTxt}</strong></p>`;
+                                    for (var i in data.d.s) {
+                                        if (i == 0)
+                                            continue;
+                                        var name = "";
+                                        for (var j in data2.d.seperateDTOList) {
+                                            if (data2.d.seperateDTOList[j].idEnc == i) {
+                                                name = data2.d.seperateDTOList[j].name;
+                                                break;
+                                            }
+                                        }
+                                        o += `<p><a href="javascript:开始分析(${id},${i},${data.d.s[i].v});">${name}</a></p>`;
+                                    }
+                                }
+                                $('#相册信息').html(o);
+                            }
+                        })
+                    } else {
+                        $('#相册信息').html(`<strong>${data.d}</strong>`);
+                    }
+                    $('#list').html('');
+                    $('#msg').html('');
+                }
+            })
+        }
+
+        function getAll(aID, subID, v, pageNumber = 1, pageCount = 60) {
+            var time = new Date();
+            window.$API.v4cFpl(aID, subID, pageCount, pageNumber, 4, v, 1).then(
+                () => {
+                    var url = window.UURRLL;
+                    $.ajax({
+                        method: 'get',
+                        url: url,
+                        success: (data) => {
+                            if (data.m == "OK") {
+                                if (data.d.length > 0) {
+                                    $('#msg').html(`第${pageNumber}页`)
+                                    allList = allList.concat(data.d);
+                                    getAll(aID, subID, v, pageNumber + 1, 60);
+                                } else {
+                                    $('#msg').html(`分析完成，一共有${allList.length}张图片<a href="javascript:批量下载();">批量下载</a>`)
+                                    var done = 0;
+                                    var ot = "";
+                                    allList.forEach(e => {
+                                        ot += `<p><a href="${e.ol}" target="_blank"><img src="${e.sl}" alt="${e.n}"/><a></p>`;
+                                    })
+                                    $('#list').html(ot);
+                                }
+                            }
+                        }
+                    })
+                }
+            );
+        }
+        function download(name, href) {
+            var a = document.createElement("a"), //创建a标签
+                e = document.createEvent("MouseEvents"); //创建鼠标事件对象
+            e.initEvent("click", false, false); //初始化事件对象
+            a.href = href; //设置下载地址
+            a.download = name; //设置下载文件名
+            a.dispatchEvent(e); //给指定的元素，执行事件click事件
+        }
+        function 批量下载() {
+            if (confirm("批量下载将直接调用浏览器下载当前所有图片，是否继续？")) {
+                allList.forEach(element => {
+                    download(e.n, e.ol);
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>
