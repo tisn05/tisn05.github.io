@@ -12,6 +12,7 @@
 
     相册ID或URL：<input type="text" value="" id="相册ID" />
     <button onclick="获取相册信息();">获取相册信息</button>
+    <input type='checkbox' checked="checked" id="仅显示下载链接">仅显示下载链接</input>
     <br />
     <div id="相册信息"></div>
     <p id="msg"></p>
@@ -113,11 +114,15 @@
                                     allList = allList.concat(data.d);
                                     getAll(aID, subID, v, pageNumber + 1, 60);
                                 } else {
-                                    $('#msg').html(`分析完成，一共有${allList.length}张图片<a href="javascript:批量下载();">批量下载</a>`)
+                                    $('#msg').html(`分析完成，一共有${allList.length}张图片`);//<a href="javascript:批量下载();">批量下载</a>`)
                                     var done = 0;
                                     var ot = "";
                                     allList.forEach(e => {
-                                        ot += `<p><a href="${e.ol}" target="_blank"><img src="${e.sl}" alt="${e.n}"/><a></p>`;
+                                        if ($('#仅显示下载链接')[0].checked) {
+                                            ot += `<p>${e.ol}</p>`;
+                                        } else {
+                                            ot += `<p><a href="${e.ol}" target="_blank"><img src="${e.sl}" alt="${e.n}"/><a></p>`;
+                                        }
                                     })
                                     $('#list').html(ot);
                                 }
@@ -135,10 +140,51 @@
             a.download = name; //设置下载文件名
             a.dispatchEvent(e); //给指定的元素，执行事件click事件
         }
+        window.downloadFile = function (sUrl, fileName) {
+
+            //iOS devices do not support downloading. We have to inform user about this.
+            if (/(iP)/g.test(navigator.userAgent)) {
+                alert('Your device does not support files downloading. Please try again in desktop browser.');
+                return false;
+            }
+
+            //If in Chrome or Safari - download via virtual link click
+            if (window.downloadFile.isChrome || window.downloadFile.isSafari) {
+                //Creating new link node.
+                var link = document.createElement('a');
+                link.href = sUrl;
+                link.target = '_blank';
+
+                if (link.download !== undefined) {
+                    //Set HTML5 download attribute. This will prevent file from opening if supported.
+                    //var fileName = sUrl.substring(sUrl.lastIndexOf('/') + 1, sUrl.length);
+                    link.download = fileName;
+                }
+
+                //Dispatching click event.
+                if (document.createEvent) {
+                    var e = document.createEvent('MouseEvents');
+                    e.initEvent('click', true, true);
+                    link.dispatchEvent(e);
+                    return true;
+                }
+            }
+
+            // Force file download (whether supported by server).
+            if (sUrl.indexOf('?') === -1) {
+                sUrl += '?download';
+            }
+
+            window.open(sUrl, '_self');
+            return true;
+        }
+
+        window.downloadFile.isChrome = navigator.userAgent.toLowerCase().indexOf('chrome') > -1;
+        window.downloadFile.isSafari = navigator.userAgent.toLowerCase().indexOf('safari') > -1;
         function 批量下载() {
             if (confirm("批量下载将直接调用浏览器下载当前所有图片，是否继续？")) {
-                allList.forEach(element => {
-                    download(e.n, e.ol);
+                allList.forEach(e => {
+                    window.downloadFile(e.ol, e.n);
                 });
             }
         }
